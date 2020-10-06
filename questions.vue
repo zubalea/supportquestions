@@ -34,6 +34,8 @@ components: {
 // This is the section of the code that puts the hightlights on the text.  The list comes from a data->profile
 // Right now it hovers over each item, we put @click on v-list-item-title. It made the click area smaller than the hover area.
 // How can we get the click to come from the full over section of appbaritem?
+
+// Note: We are using :to on most of the drop down item, but we want to use a click on one of the profile list.
       <v-list :tile="false" flat nav>
         <template v-for="(p, i) in profile">
           <v-divider v-if="p.divider" :key="`divider-${i}`" class="mb-2 mt-2" />
