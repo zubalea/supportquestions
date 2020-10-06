@@ -31,7 +31,7 @@ components: {
     },
   },
           
-// This is the section of the code the puts hightlights of the text.  The list comes from a data->profile
+// This is the section of the code that puts the hightlights on the text.  The list comes from a data->profile
 // Right now it hovers over each item, we put @click on v-list-item-title. It made the click area smaller than the hover area.
 // How can we get the click to come from the full over section of appbaritem?
       <v-list :tile="false" flat nav>
