@@ -1,47 +1,22 @@
-// From the Top Navigation Bar of the Vuetify Material Pro Template
-
-// I am not familiar with the syntax of this type component render
-components: {
-    AppBarItem: {
-      render(h) {
-        return h(VHover, {
-          scopedSlots: {
-            default: ({ hover }) => {
-              return h(
-                VListItem,
-                {
-                  attrs: this.$attrs,
-                  class: {
-                    'black--text': !hover,
-                    'white--text secondary elevation-12': hover,
-                  },
-                  props: {
-                    activeClass: '',
-                    dark: hover,
-                    link: true,
-                    ...this.$attrs,
-                  },
-                },
-                this.$slots.default
-              )
-            },
-          },
-        })
-      },
-    },
-  },
-          
-// This is the section of the code that puts the hightlights on the text.  The list comes from a data->profile
-// Right now it hovers over each item, we put @click on v-list-item-title. It made the click area smaller than the hover area.
-// How can we get the click to come from the full over section of appbaritem?
-
-// Note: We are using :to on most of the drop down item, but we want to use a click on one of the profile list.
-      <v-list :tile="false" flat nav>
-        <template v-for="(p, i) in profile">
-          <v-divider v-if="p.divider" :key="`divider-${i}`" class="mb-2 mt-2" />
-
-          <AppBarItem v-else :key="`item-${i}`" :to="p.link">
-            <v-list-item-title v-text="p.title" />
-          </AppBarItem>
+ <v-menu :close-on-content-click="false" offset-x>
+        <template v-slot:activator="{ on, attrs }">
+          <v-btn v-bind="attrs" x-small class="ml-5 pt-4 pb-4" v-on="on">
+            <v-icon small>
+              mdi-dots-vertical
+            </v-icon>
+          </v-btn>
         </template>
-      </v-list>
+        <v-card class="mt-0 mb-0">
+          <v-list>
+            <v-list-item
+              v-for="(item, index) in dashEmitList"
+              :key="index"
+              style="min-height: 30px;"
+              color="blue"
+              @click="dotsmenu(item.emitname)"
+            >
+              <v-list-item-title>{{ item.title }}</v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </v-card>
+      </v-menu>
