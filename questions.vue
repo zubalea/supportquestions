@@ -52,7 +52,7 @@ export default {
     // jsonConfig is the info that controls every aspect of the chart including data.
     // chartid_ + instance is a unique ID on the page for this chart.
     // amChartType retuirns XYChart or PieChart.  Tells amchart which type of chart will be rendered.
-    // ISSUE HERE:  jsongConfig is setup as reactive, but when it changes it doesn cause this chart to re-render.
+    // ISSUE HERE:  jsongConfig is setup as reactive, but when it changes it doesn't cause this chart to re-render. 
     var chart = am4core.createFromConfig(
       this.jsonConfig,
       'chartid_' + this.widget.instance,
