@@ -1,10 +1,10 @@
 <script>
-// LINE 55 is where I am having an issue.
+// LINE 56 is where I am having an issue.
 import { get, call } from 'vuex-pathify'
 import * as am4core from '@amcharts/amcharts4/core'
 // eslint-disable-next-line no-unused-vars
 import * as am4charts from '@amcharts/amcharts4/charts'
-am4core.addLicense('')
+am4core.addLicense('CH92155554')
 
 // globaFilter is the data that will change based on a dropdown selection.
 export default {
@@ -26,12 +26,17 @@ export default {
     return {
       // json string fed to amChart.   Used to build the look and feel of the chart
       jsonConfig: {},
+      filterToggle: true,
+      chart: {},
     }
   },
   computed: {
     getChartColors: get('settings/chartColors'), // get a list of default chart colors
     amChartTypes: get('dashboard/amChartTypes'), // get a chartType to tell amchart what chart to use
     amSeriesTypes: get('dashboard/amSeriesTypes'), // get a seriesType to tell amchart what series to use
+    divId() {
+      return 'chartid_' + this.widget.instance
+    },
     // css - unimportant
     getStyle() {
       return 'width: 100%; height: 100%;'
@@ -39,9 +44,10 @@ export default {
   },
   watch: {
     // watch if filter changed.   if yes then get the data again with the new filter.
-    globalFilter() {
+    async globalFilter() {
       console.log('filter updated')
-      this.fetchGraphqlData()
+      this.chart.data = await this.fetchGraphqlData()
+      console.log('this chart after new data:', this.chart)
     },
   },
   async mounted() {
@@ -52,18 +58,17 @@ export default {
     // jsonConfig is the info that controls every aspect of the chart including data.
     // chartid_ + instance is a unique ID on the page for this chart.
     // amChartType retuirns XYChart or PieChart.  Tells amchart which type of chart will be rendered.
-    // ISSUE HERE:  jsongConfig is setup as reactive, but when it changes it doesn't cause this chart to re-render. 
-    var chart = am4core.createFromConfig(
+    // ISSUE HERE:  jsongConfig is setup as reactive, but when it changes it doesn cause this chart to re-render.
+    this.chart = am4core.createFromConfig(
       this.jsonConfig,
       'chartid_' + this.widget.instance,
       this.amChartTypes[this.widget.type]
     )
-    console.log(chart)
+    console.log('this chart after am4core', this.chart)
   },
 
-  //  removes charts when leaving removing this component
-  beforeDestroy() {
-    console.log('dispose')
+  //  properly dispose of charts when leaving a dashboard
+  unmounted() {
     if (this.chart) {
       this.chart.dispose()
     }
@@ -88,13 +93,14 @@ export default {
     // function that builds the jsonConfig JSON Object.
     async buildChartConfig(widget) {
       // TODO: the following are needed for the widget config.  Hardcoded for now.
+      // module: logstats/bysource
       const xField = 'sending_host'
       const yValue = 'total_num_events'
-      const xAxisTitle = 'Axis X Title'
-      const yAxisTitle = 'Axis Y Title'
-      console.log(xField, yValue)
+      const xAxesTitle = 'Axes X Title'
+      const yAxesTitle = 'Axes Y Title'
+      console.log(xField, yValue, await this.widget.type)
 
-      const config = []
+      const config = {}
       // defaults section
       const defaults = {
         responsive: { enabled: 'true' },
@@ -113,47 +119,103 @@ export default {
       const tableData = await this.fetchGraphqlData()
       Object.assign(config, { data: tableData })
 
+      // debugger
       // Series section
-      const series = {
-        series: [
-          {
-            type: this.amSeriesTypes[this.widget.type],
-            dataFields: { valueY: yValue, categoryX: xField },
-            columns: {
-              tooltipText: '{valueY.value}',
+      console.log(
+        'series widget type',
+        await this.amSeriesTypes[this.widget.type]
+      )
+      // const series = {
+      //   series: [
+      //     {
+      //       type: await this.amSeriesTypes[this.widget.type],
+      //       dataFields: { valueY: yValue, categoryX: xField },
+      //       columns: {
+      //         tooltipText: '{valueY.value}',
+      //       },
+      //     },
+      //   ],
+      // }
+
+      // Object.assign(config, series)
+
+      let xAxes
+      let yAxes
+      let series
+      // Axes Section
+      if ('amcolumn, amline'.includes(widget.type)) {
+        xAxes = {
+          xAxes: [
+            {
+              type: 'CategoryAxis',
+              dataFields: {
+                category: xField,
+              },
+              title: { text: xAxesTitle },
             },
-          },
-        ],
+          ],
+        }
+
+        yAxes = {
+          yAxes: [
+            {
+              type: 'ValueAxis',
+              title: { text: yAxesTitle },
+            },
+          ],
+        }
+
+        series = {
+          series: [
+            {
+              type: await this.amSeriesTypes[this.widget.type],
+              dataFields: { valueY: yValue, categoryX: xField },
+              columns: {
+                tooltipText: '{valueY.value}',
+              },
+            },
+          ],
+        }
       }
 
+      if ('ambar'.includes(widget.type)) {
+        yAxes = {
+          yAxes: [
+            {
+              type: 'CategoryAxis',
+              dataFields: {
+                category: xField,
+              },
+              title: { text: xAxesTitle },
+            },
+          ],
+        }
+
+        xAxes = {
+          xAxes: [
+            {
+              type: 'ValueAxis',
+            },
+          ],
+        }
+
+        series = {
+          series: [
+            {
+              type: 'ColumnSeries',
+              dataFields: { valueX: yValue, categoryY: xField },
+              columns: {
+                tooltipText: '{valueY.value}',
+              },
+            },
+          ],
+        }
+      }
+
+      // console.log('Axes:', xAxes, yAxes)
       Object.assign(config, series)
-
-      // Axis Section
-      const xAxis = {
-        xAxes: [
-          {
-            type: 'CategoryAxis',
-            dataFields: {
-              category: xField,
-            },
-            title: { text: xAxisTitle },
-          },
-        ],
-      }
-
-      Object.assign(config, xAxis)
-      const yAxis = {
-        yAxes: [
-          {
-            type: 'ValueAxis',
-            title: { text: yAxisTitle },
-          },
-        ],
-      }
-
-      Object.assign(config, yAxis)
-      console.log('Axis:', xAxis, yAxis)
-
+      Object.assign(config, xAxes)
+      Object.assign(config, yAxes)
       // legend Section
       const legend = { legend: {} }
       Object.assign(config, legend)
@@ -167,17 +229,13 @@ export default {
 
 <template>
   <v-container style="width: 100%; height: 100%;" class="pa-1">
-    Inner Widget {{ widget }}
     <div>
       <base-widget-system-bar
         :title="widget.title"
         :item-index="widget.instance"
+        :widget-filter="widgetFilter"
       />
     </div>
-    <div
-      :id="'chartid_' + widget.instance"
-      style="width: 90%; height: 90%;  margin: auto;"
-    >
-    </div>
+    <div :id="divId" style="width: 90%; height: 90%;  margin: auto;"> </div>
   </v-container>
 </template>
