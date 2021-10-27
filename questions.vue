@@ -1,42 +1,65 @@
-I get this error in many of .vue files.   Just showing one because they are all the samme error
+const path = require('path')
+const appConfig = require('./src/app.config')
 
-ERROR START ***********************
-error  in ./src/views/common/_timeout.vue?vue&type=style&index=0&lang=sass&module=true&
+var allowedHosts = process.env.VUE_APP_DEV_ALLOWED_HOSTS.split(',')
 
-Syntax Error: SassError: Can't find stylesheet to import.
-  ╷
-1 │ @import '@/styles/variables.sass'
-  │         ^^^^^^^^^^^^^^^^^^^^^^^^^
-  ╵
-  src/views/common/_timeout.vue 1:9  root stylesheet
-ERROR END *****************************
-  
-**** file: veutify.js   (note @src are aliased to src)
-import '@mdi/font/css/materialdesignicons.css'
-import Vue from 'vue'
-import Vuetify from 'vuetify/lib'
-import i18n from '@src/i18n'
-  
-**** app.vue
-<style lang="sass">
-@import '~vuetify/src/styles/styles.sass'
+module.exports = {
 
-@media #{map-get($display-breakpoints, 'md-and-down')}
-  .custom-class
-    display: none
-</style>
+  configureWebpack: {
+    devtool: 'source-map',
+    devServer: {
+      allowedHosts: allowedHosts,
+      headers: {
+        'Cache-Control': 'no-cache, no-transform',
+      },
+    },
+  },
+  chainWebpack(config) {
+    // We provide the app's title in Webpack's name field, so that
+    // it can be accessed in index.html to inject the correct title.
+    config.set('name', appConfig.title)
 
+    // Set up all the aliases we use in our app.
+    // config.resolve.alias.clear().merge(require('./aliases.config').webpack)
+    config.resolve.alias.set(
+      'vue$',
+      path.resolve(__dirname, 'node_modules/vue/dist/vue.esm.js')
+    )
 
-**** _timeout.vue
-<style lang="sass" module>
-.title
-  text-align: center
-</style>
+    // Don't allow importing .vue files without the extension, as
+    // it's necessary for some Vetur autocompletions.
+    config.resolve.extensions.delete('.vue')
 
-*** src/styles/variables.sass
-// simple test for now
-$body-font-family: 'Work Sans', serif;
-
-
-
-
+    // Only enable performance hints for production builds,
+    // outside of tests.
+    config.performance.hints(
+      process.env.NODE_ENV === 'production' &&
+        !process.env.VUE_APP_TEST &&
+        'warning'
+    )
+  },
+  css: {
+    // Enable CSS source maps.
+    sourceMap: true,
+  },
+  // Configure Webpack's dev server.
+  // https://cli.vuejs.org/guide/cli-service.html
+  devServer: {
+    proxy: {
+      '/api': {
+        target: process.env.VUE_APP_API_DJANGO_PROXY_TARGET,
+        secure: false,
+        // changeOrigin: true,
+      },
+    },
+  },
+  transpileDependencies: ['vuetify'],
+  pluginOptions: {
+    i18n: {
+      locale: 'en',
+      fallbackLocale: 'en',
+      localeDir: 'locales',
+      enableInSFC: false,
+    },
+  },
+}
